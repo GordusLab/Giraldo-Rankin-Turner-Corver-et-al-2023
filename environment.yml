@@ -1,0 +1,17 @@
+name: moscote
+channels:
+  - numba
+  - conda-forge
+  - defaults
+  - pytorch
+dependencies:
+  - python==3.8.*
+  - numpy
+  - statsmodels
+  - matplotlib
+  - pandas
+  - tqdm
+  - jupyter
+  - regex
+  - joblib
+  - openpyxl

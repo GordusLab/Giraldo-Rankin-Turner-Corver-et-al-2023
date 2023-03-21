@@ -1,0 +1,221 @@
+---
+title: "Mosquito GLM"
+author: "Rajiv McCoy"
+date: "2023-03-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load required libraries
+
+```{r, message=FALSE}
+library(data.table) 
+library(tidyverse) 
+library(readxl) 
+library(MASS) 
+library(jtools)
+library(emmeans)
+```
+
+Read in the data and reformat to "long" orientation:
+
+```{r, message=FALSE}
+dt <- read_xlsx("~/Downloads/2023 Diego Data.xlsx", sheet = 1) %>% 
+  as.data.table() %>% 
+  setnames(., "...1", "night")
+
+temp <- read_xlsx("~/Downloads/2023 Diego Data.xlsx", sheet = 3) %>% 
+  as.data.table() %>% 
+  setnames(., "...1", "night")
+
+humid <- read_xlsx("~/Downloads/2023 Diego Data.xlsx", sheet = 4) %>% 
+  as.data.table() %>% 
+  setnames(., "...1", "night")
+
+pos <- read_xlsx("~/Downloads/2023 Diego Data.xlsx", sheet = 5) %>% 
+  as.data.table() %>% 
+  setnames(., "...1", "night")
+
+dt <- merge(merge(dt, temp, by = "night"), humid, by = "night") %>% 
+  setnames(., c("night", "h1", "h2", "h3", "h4", "h5", "h6", "NA", 
+                "total", "temp", "rel_humid"))
+
+dt_melt <- melt(dt[, -"total"], measure.vars = c("h1", "h2", "h3", "h4", "h5", "h6")) %>% 
+  as.data.table() %>% 
+  setnames(., "value", "landings") %>% 
+  merge(., pos, by = "night") %>% 
+  setnames(., "variable", "human")
+
+dt_melt[, position := as.numeric(NA)]
+dt_melt[human == "h1", position := `Position Human 1`] 
+dt_melt[human == "h2", position := `Position Human 2`] 
+dt_melt[human == "h3", position := `Position Human 3`] 
+dt_melt[human == "h4", position := `Position Human 4`] 
+dt_melt[human == "h5", position := `Position Human 5`] 
+dt_melt[human == "h6", position := `Position Human 6`] 
+dt_melt[, position := paste0("p", position)] 
+dt_melt <- dt_melt[, c("landings", "night", "temp", "rel_humid", "human", "position")]
+
+dt_melt <- merge(dt_melt, dt[, c("night", "total")], by = "night")
+
+head(dt_melt, 20)
+```
+
+Plot the proportion of landings per human per night (add confidence intervals by bootstrapping?):
+
+```{r, message = FALSE}
+ggplot(data = dt_melt, aes(x = night, y = landings / total, fill = human)) +
+  geom_bar(stat = "identity") +
+  scale_fill_brewer(palette = "Set2", name = "Human") +
+  theme(panel.grid = element_blank(), panel.background = element_blank()) +
+  ylab("Proportion of landings") +
+  xlab("")
+```
+
+Fit full and reduced negative binomial generalized linear models:
+
+```{r, message = FALSE}
+
+full_model <- glm.nb(data = dt_melt, 
+                     formula = landings ~     
+                       human + position + scale(rel_humid) + scale(temp) + offset(log(total)),
+                     link = log, maxit = 100)
+
+reduced_no_human <- glm.nb(data = dt_melt, 
+                           formula = landings ~     
+                             factor(position) + scale(rel_humid) + scale(temp) + offset(log(total)),
+                           link = log, maxit = 100)
+
+reduced_no_position <- glm.nb(data = dt_melt, 
+                              formula = landings ~     
+                                human + scale(rel_humid) + scale(temp) + offset(log(total)),
+                              link = log, maxit = 100)
+
+```
+
+Is "human" a significant predictor? Yes
+
+```{r, message = FALSE}
+anova(full_model, reduced_no_human)
+```
+
+Is "position" a significant predictor? Yes
+
+```{r, message = FALSE}
+anova(full_model, reduced_no_position)
+```
+
+Are temperature and humidity significant predictors? No. Note that the reference levels of the categorical predictors are "human 1" and "position 1":
+
+```{r, message = FALSE}
+summary(full_model)
+```
+
+```{r, message = FALSE}
+est <- cbind(estimate = coef(full_model), confint(full_model)) %>%
+  exp()
+est
+```
+
+Plot predicted vs. observed landings:
+
+```{r, message = FALSE}
+
+dt_melt[, predicted_landings := predict(full_model, type = "response")]
+
+ggplot(data = dt_melt, aes(x = predicted_landings, y = landings, color = human, shape = position)) +
+  geom_point() +
+  geom_abline(slope = 1) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_color_brewer(palette = "Set2") +
+  scale_x_log10(limits = c(1, 5000)) +
+  scale_y_log10(limits = c(1, 5000)) +
+  xlab("Predicted landings") +
+  ylab("Observed landings")
+
+```
+
+Plot predicted vs. observed landing proportions:
+```{r, message = FALSE}
+
+dt_melt[, predicted_landings := predict(full_model, type = "response")]
+
+ggplot(data = dt_melt, aes(x = predicted_landings / total, y = landings / total, color = human, shape = position)) +
+  geom_point() +
+  geom_abline(slope = 1) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  scale_color_brewer(palette = "Set2") +
+  xlab("Predicted landing proportion") +
+  ylab("Observed landing proportion")
+
+```
+
+
+Plot residuals:
+
+```{r, message = FALSE}
+hist(resid(full_model))
+```
+
+Obtain estimated marginal means for visualization:
+
+```{r, message = FALSE}
+em_hum <- emmeans(full_model, ~ human, type = "response", offset = 0) %>%
+  as.data.table()
+
+ggplot(data = em_hum, aes(x = human, y = response, 
+                          ymin = asymp.LCL, ymax = asymp.UCL, 
+                          fill = human)) +
+  geom_bar(stat = "identity") +
+  geom_errorbar(width = 0.25) +
+  theme_bw() +
+  theme(legend.position = "none",
+        panel.grid = element_blank()) +
+  scale_fill_brewer(palette = "Set2") +
+  ylab("Estimated marginal\nmean landing proportion") +
+  xlab("Human")
+```
+
+Perform all pairwise comparisons with Tukey's method:
+```{r, message = FALSE}
+pairs(emmeans(full_model, ~ human, type = "response", offset = 0))
+```
+
+Repeat for "position":
+```{r, message = FALSE}
+em_pos <- emmeans(full_model, ~ position, type = "response", offset = 0) %>%
+  as.data.table()
+
+ggplot(data = em_pos, aes(x = position, y = response, 
+                          ymin = asymp.LCL, ymax = asymp.UCL, 
+                          fill = position)) +
+  geom_bar(stat = "identity") +
+  geom_errorbar(width = 0.25) +
+  theme_bw() +
+  theme(legend.position = "none",
+        panel.grid = element_blank()) +
+  scale_fill_brewer(palette = "Set2") +
+  ylab("Estimated marginal\nmean landing proportion") +
+  xlab("Position")
+```
+
+Pairwise comparisons among positions:
+```{r, message = FALSE}
+pairs(emmeans(full_model, ~ position, type = "response", offset = 0))
+```
+
+
+
+
+
+
+
+
+
+
+
