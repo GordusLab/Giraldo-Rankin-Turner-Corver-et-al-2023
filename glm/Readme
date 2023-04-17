@@ -1,0 +1,19 @@
+This README Accompanies:
+------------------------
+
+
+--------------------
+Corresponding Author:
+---------------------
+
+Conor McMeniman
+cmcmeni1@jhu.edu
+
+------------------------------
+R scripts in this repository:
+------------------------------
+
+This folder contains the file mosquito_glm.Rmd
+
+This file contains a script to run a generalized linear model using R to analyze the effect of human, position, humidity and temeprature on landing
+data obtained from 6-human experiments. 
