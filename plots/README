@@ -1,0 +1,19 @@
+README
+This README Accompanies:
+------------------------
+
+
+--------------------
+Corresponding Author:
+---------------------
+
+Conor McMeniman
+cmcmeni1@jhu.edu
+
+------------------------------
+PDF files in this folder
+------------------------------
+
+This folder contains PDF files that contain plots for histograms resulting from the permutation analysis used as a statistical test to calculate
+siginificant differences in landing percentages and total number of landing for field data. Each histogram is a comparison between two stimuli and 
+the reported p-value is a value resulting from the analysis with Benjamini-hochberg correction for multiple comparisons. 
