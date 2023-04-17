@@ -17,3 +17,10 @@ PDF files in this folder
 This folder contains PDF files that contain plots for histograms resulting from the permutation analysis used as a statistical test to calculate
 siginificant differences in landing percentages and total number of landing for field data. Each histogram is a comparison between two stimuli and 
 the reported p-value is a value resulting from the analysis with Benjamini-hochberg correction for multiple comparisons. 
+
+
+------------------------------
+csv files in this folder
+-----------------------------
+
+csv files in this folder contain the data used to make the histograms mentioned above. 
