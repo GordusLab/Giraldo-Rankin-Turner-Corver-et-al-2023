@@ -1,0 +1,13 @@
+This README Accompanies:
+Human scent guides mosquito thermotaxis and host selection under naturalistic conditions
+
+Diego Giraldo*, Stephanie Rankin-Turner*, Abel Corver, Genevieve M. Tauxe, Anne L. Gao, Dorian M. Jackson, Limonty Simubali, Christopher Book, Jennifer C. Stevenson, Philip E. Thuma, Rajiv C. McCoy, Andrew Gordus, Monicah M. Mburu, Edgar Simulundu and Conor J. McMeniman
+
+Corresponding Author:
+Conor McMeniman cmcmeni1@jhu.edu
+
+Files in this directory:
+data_AllC.csv: A csv file containing the raw landing data from 6-human experiments. This data can be used as an input for permutation analyses. 
+human_positions.xlsx: An xlsx file containing the information of the positions in cage that each human in 6-human experiments occupied. 
+tracking-predictions-aggregated-filtered-50_10_20_0_20.csv.zip: A csv file containing full trajectory information for 6-humans experiments doccumenting the frames each mosquito occupied each platform every night. 
+tracking-predictions-aggregated-startendonly-filtered-50_10_20_0_20.csv: A csv file containing the start and end frames for each trajectory obtained for 6-human experiments for each platform every night. 
